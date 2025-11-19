@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace shittyFileManager/*
     i keep forgeting that mod managers are just kinda like file managers for mods 
@@ -17,8 +20,34 @@ namespace shittyFileManager/*
         private DirectoryInfo skylinePlugins;
         private DirectoryInfo ultimateMods;
         private DirectoryInfo rootDisabled;
+        /*
+         * should try to find save data location of ssbu
+         * \Roaming\Ryujinx\bis\user\save\
+         * somewher in there probably try to find a folder named save_data
+         * or try to find the file named system_data.bin
+         * to load like save datas quicker probably get from web
+         * type shit
+         * maybe scan is a better word than find
+         */
         public SBMUFM() {
-            RyuSlightSetup();
+            RyuSlightSetup();/*
+                              * ive been thinking since when i learned about hard links and how they worked
+                              * should use it so then i could have my mods in a seperate folder and like yeah
+                              * idk
+                              * i think it would be a good idea but then i have to change lots of stuff i already made
+                              * then i could probably just delete the mod instead of moving it maybe
+                              * unsure i havent thought the whole thing through yet but i probably wont
+                              * 
+                              * i also discovered like a few mins ago (12:59AM AST 11/16/2025)
+                              * that there is a mod manager made around the time i first started making this around the end of 2024 as i thought there wasnt any for ryujinx
+                              * its called fightplanner i forgot but lowkey i dont think i should continue this if theres something better yk
+                              * but i started this i wanna atleast finish it to a usable extent but instead of working on ui i just keep stalling finishing this class file
+                              * and starting on propper UI not that i am busy its just that im lazy icl and my coding time consists of watching long youtube videos and writing like probably on avg 4 lines maybe
+                              * which makes me waste like a whole like 1/3 of my day but i do finish it at somepoint probably at the next day at like rn
+                              * this is probably like a little of inside of my mind thing but the reason i opened it today (or yesterday) was because i felt some motivation to finsihing stuff i havent finished which is alot but ill just do the ones i find more important to me
+                              * so ill probably be working on it the next few days
+                              * comments have no date or order i should porbably start adding those at the begining or somethings
+                              */
         }
         private void RyuSlightSetup()// a long function of creating folders and making sure it exists ig
         {
@@ -50,11 +79,15 @@ namespace shittyFileManager/*
                 }
             }
             rootDisabled = new DirectoryInfo(ryuSDCardUltimate.FullName + @"\_fisabled");
+            FileInfo ModChanges = new(rootDisabled.FullName + @"\ModChanges.json");
             if (!rootDisabled.Exists)
             {
                 rootDisabled.Create();
                 rootDisabled.CreateSubdirectory("nro");
                 rootDisabled.CreateSubdirectory("mods");
+                var ws = ModChanges.CreateText();
+                ws.WriteLine("{}");
+                ws.Close();
             }
             else
             {
@@ -67,6 +100,12 @@ namespace shittyFileManager/*
                 if (!mods.Exists)
                 {
                     mods.Create();
+                }
+                if (!ModChanges.Exists)
+                {
+                    var ws = ModChanges.CreateText();
+                    ws.WriteLine("{}");
+                    ws.Close();
                 }
             }
             //auto add like the atmosphere folder stuff
@@ -157,9 +196,32 @@ namespace shittyFileManager/*
         }
         public bool modState(string modpath)// just checks if file/dir path is in the disabled folder basicly a isDisabled variable
         {
-            if (modpath == null)
-            { 
-                return false; 
+            if (modpath == null || string.IsNullOrEmpty(modpath))
+            {
+                return false;
+            }
+            bool isFile = modpath.EndsWith(".nro");
+            if (!isFile) {
+                DirectoryInfo modfold = new DirectoryInfo(modpath);
+                string modfoldN = modfold.Name;
+                if (Directory.Exists(rootDisabled.FullName + @"\mods\" + modfoldN) && Directory.Exists(ultimateMods.FullName + @"\" + modfoldN))
+                {
+                    DirectoryInfo modfold0 = new DirectoryInfo(rootDisabled.FullName + @"\mods\" + modfoldN);
+                    DirectoryInfo modfold1 = new DirectoryInfo(ultimateMods.FullName + @"\" + modfoldN);
+                    long modDis = modfold0.CreationTime.Ticks;
+                    long modEn = modfold1.CreationTime.Ticks;
+                    if ((modEn - modDis) > 0)
+                    {
+                        modfold0.Delete(true);
+                    }
+                    else
+                    {
+                        modfold1.Delete(true);
+                    }
+                } 
+            } else
+            {
+                //later maybe
             }
             return modpath.Contains(rootDisabled.FullName);
         }
@@ -202,7 +264,7 @@ namespace shittyFileManager/*
                 }
             }
         }
-        private string getZip(string name)// took ts from the microsoft docs about ZipFile
+        private string getZip(string name)// took ts(this shit) from the microsoft docs about ZipFile
         {
             string path = @".\" + name + ".zip";
 
@@ -272,12 +334,13 @@ namespace shittyFileManager/*
             }
             ZipFile.ExtractToDirectory(thepath, smashAtmos.FullName, true);
         }
-        public string infoToml(string modPath, int mode = 0,
+        public object infoToml(string modPath, int mode = 0,
                 string displayName = "Mod name goes here", 
-                string auth = "author(s) go here", 
+                string own = "author(s) go here", 
                 string ver = "1.0", 
-                string desc = "Description for mod goes here", 
-                string cat = "Misc")/*
+                string desc = "Description for mod goes here",
+                string cat = "Misc",
+                string src = "https://gamebanana.com/games/6498")/*
                 category = "Fighter, Stage, Effects, UI, Param, Audio, Misc"
             */
         {
@@ -288,13 +351,187 @@ namespace shittyFileManager/*
             if (mode == 0) //just get from the file
             {
                 ///toml.
+                string wT = File.ReadAllText(toml.FullName);
+                string[] probablyvars = File.ReadAllLines(toml.FullName);
+                //
+                Dictionary<string, string> test = new();
+                string descr = "";
+                foreach (var s in probablyvars)
+                {
+                    var f = s.Split(" = ");
+                    if (f.Length == 2 && f[0] != "description")
+                    {
+                        string key = f[0];
+                        string value = f[1].Replace("\"", "");
+                        if (key == "version")
+                        {
+                            key = "ver";
+                        }else if(key == "category")
+                        {
+                            key = "cat";
+                        }else if(key == "authors")
+                        {
+                            key = "own";
+                        }
+                        else if (key == "display_name")
+                        {
+                            key = "name";
+                        }
+                        else if (key == "source")
+                        {
+                            key = "src";
+                        }
+                        test.Add(key, value);
+                    }
+                }
+                var startdesc = wT.IndexOf("description = \"\"\"");
+                var enddesc = wT.LastIndexOf("\"\"\"");
+                descr = wT.Substring(startdesc, (enddesc - startdesc)).Replace("description = \"\"\"", "").Replace("\"\"\"", "").TrimStart().TrimEnd();
+                test.Add("desc", descr);
+
+                return test;
             }
             else if (mode == 1)//overwrite to the file or create it
             {
-
+                StreamWriter wa = File.CreateText(toml.FullName);
+                wa.WriteLine($"display_name = \"{displayName}\"");
+                wa.WriteLine($"authors = \"{own}\"");
+                wa.WriteLine($"version = \"{ver}\"");
+                wa.WriteLine($"description = \"\"\"{desc}\"\"\"");
+                wa.WriteLine($"category = \"{cat}\"");
+                //wa.WriteLine($"source = \"{src}\"");// mod download source or site whateva
+                wa.Close();
             }
-            return "";
+            return "No valid modes selected";
         }
-
+        public object CheckConflicts(int modes = 0)//checks for recent conflicts and adds them
+        /*
+         possible you could probably run through the mod folders files and see/search4 the layout.arc or stuff liwe that and see if another mod also has that but idk and im unsure so ill just do this*/
+        {
+            FileInfo conflictsfilejson = new(ryuSDCardUltimate + @"\arcropolis\conflicts.json");
+            if (modes == 0)
+            {
+                if (!conflictsfilejson.Exists)
+                {
+                    return $"Conflict file doesnt exist in {ryuSDCardUltimate + @"\arcropolis\conflicts.json"}";
+                }
+                Dictionary<string, string[]> conflictsjson =
+                    JsonSerializer.Deserialize<Dictionary<string, string[]>>(
+                            File.ReadAllText(conflictsfilejson.FullName)
+                        );
+                if (conflictsjson != null)
+                {
+                    Dictionary<string, string[]> ModChanges =
+                        JsonSerializer.Deserialize<Dictionary<string, string[]>>(
+                                File.ReadAllText(rootDisabled.FullName + @"\ModChanges.json")
+                            );
+                    foreach (var item in conflictsjson)
+                    {
+                        string problemAt = item.Key;
+                        string[] hatred = item.Value;
+                        foreach (string Modpath in hatred)
+                        {
+                            string modFolderName = Modpath.Split("/mods/")[1];
+                            List<string> maybenew = new();
+                            bool problemExists = false;
+                            if (ModChanges.ContainsKey(modFolderName))
+                            {
+                                foreach (var modUsesPath in ModChanges[modFolderName])
+                                {
+                                    maybenew.Add(modUsesPath);
+                                    if (problemAt == modUsesPath)
+                                    {
+                                        problemExists = true;
+                                    }
+                                }
+                            }
+                            if (!problemExists)
+                            {
+                                maybenew.Add(problemAt);
+                            }
+                            if (!ModChanges.ContainsKey(modFolderName))
+                            {
+                                ModChanges.Add(modFolderName, maybenew.ToArray());
+                            }
+                            else
+                            {
+                                ModChanges[modFolderName] = maybenew.ToArray();
+                            }
+                        }
+                        /*notes
+                         * 
+                         * after this it adds to a dict where it has the mod as key and the conflict in side an array as value
+                         * and should then save to a file to remembeer which changes which
+                         * and when a mod is enabled it checks the dict for mods that are enabled
+                         * and cross refferences things that a mod changes with the other
+                         * but the changes is only known when the mistake is done once
+                         * 
+                         * something like that
+                         */
+                    }
+                    File.WriteAllText(rootDisabled.FullName + @"\ModChanges.json",
+                            JsonSerializer.Serialize(ModChanges)
+                        );
+                }
+            }
+            else if(modes == 1)
+            {
+                Dictionary<string, string[]> ModChanges =
+                        JsonSerializer.Deserialize<Dictionary<string, string[]>>(
+                                File.ReadAllText(rootDisabled.FullName + @"\ModChanges.json")
+                            );
+                if(!(ModChanges.Count > 0)) 
+                {
+                    return "Valid mode but empty no conflicts to match";
+                }
+                DirectoryInfo[] activeMods = ultimateMods.GetDirectories();
+                List<string> modsFound = new List<string>();
+                List<string> allModsFound = new List<string>();
+                List < Dictionary<string, string> > Problems = new List<Dictionary<string, string>>();
+                foreach (var mod in activeMods)
+                {
+                    allModsFound.Add(mod.Name);
+                    if (ModChanges.ContainsKey(mod.Name))
+                    {
+                        modsFound.Add(mod.Name);
+                    }
+                }
+                //{hatedmod:"${hatedmod}",reason:"both mods change ${path}",offendedmod:"${mod}"}
+                foreach (string mod in modsFound)
+                {
+                    string[] modpaths_A = ModChanges[mod];
+                    foreach (string path_A in modpaths_A)
+                    {
+                        foreach (var hatingmods in ModChanges)
+                        {
+                            string hatedMod = hatingmods.Key;
+                            if (mod == hatedMod) continue; // lowkey forgot about being able to do this now im gonna spam checks like this everywhere :osakastare:(the smile stare yk)
+                            string[] modpaths_B = hatingmods.Value;
+                            foreach (string path_B in modpaths_B)
+                            {
+                                if (path_B != path_A) continue;
+                                if (!allModsFound.Contains(hatedMod)) continue;
+                                Dictionary<string,string> conclusion = new();
+                                conclusion.Add("mod", mod);
+                                conclusion.Add("hated", hatedMod);
+                                conclusion.Add("path", path_A);
+                                conclusion.Add("reason", $"Both {mod} and {hatedMod} modify the same path: {path_A}");
+                                Problems.Add(conclusion);
+                            }
+                        }
+                    }
+                }
+                return Problems;
+                /*notes 3:49AM 11/16/2025
+                 *
+                 * Should either handle everything on this side by checking in the active folder see if mods that are in the active folder exists in the list
+                 * then should check what they change and if they change the same thing it should return a table with mods(string[]) and reason(string arc paththing) index
+                 * {problem:["mod1","mod2"],reason:"modifies path blahblahblah"}
+                 * something like that
+                 *
+                 */
+            }
+            return "Invalid mode";
+        }
     }
 }
