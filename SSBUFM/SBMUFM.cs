@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace shittyFileManager_/*
+namespace shittyFileManager/*
     i keep forgeting that mod managers are just kinda like file managers for mods 
 */
 {

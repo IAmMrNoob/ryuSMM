@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36408.4
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "testSMBUryuUtility", "testSMBUryuUtility.csproj", "{3408247F-6F51-4B2D-BC4A-2682747D647A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "testSSBUryuUtility", "testSSBUryuUtility.csproj", "{3408247F-6F51-4B2D-BC4A-2682747D647A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SSBUFMClass", "..\SSBUFM\SSBUFMClass.csproj", "{8FC983FF-2F69-48C8-B57C-B0323560B250}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{3408247F-6F51-4B2D-BC4A-2682747D647A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3408247F-6F51-4B2D-BC4A-2682747D647A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3408247F-6F51-4B2D-BC4A-2682747D647A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8FC983FF-2F69-48C8-B57C-B0323560B250}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8FC983FF-2F69-48C8-B57C-B0323560B250}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8FC983FF-2F69-48C8-B57C-B0323560B250}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8FC983FF-2F69-48C8-B57C-B0323560B250}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
